@@ -1,33 +1,38 @@
-import { useState, useRef, useEffect } from 'react';
-import { jsPDF } from 'jspdf';
-import html2canvas from 'html2canvas';
-import { Github, Linkedin, Globe, MapPin, Phone, Mail, Edit, Eye, Palette } from 'lucide-react';
+import { useState,useEffect } from 'react';
+import {Edit, Eye, Palette } from 'lucide-react';
+import { PDFDownloadLink, PDFViewer } from '@react-pdf/renderer';
+import CVPreview from './CVPreview'; 
 
 const COLOR_PALETTES = [
-    { name: 'Blue Ocean', 
-      header: 'bg-blue-100', 
-      contactInfo: 'bg-blue-50', 
-      divider: 'border-blue-300' 
+    { 
+        name: 'Blue Ocean', 
+        headerBg: '#E6F2FF',  // Tailwind blue-100 converted to hex
+        contactBg: '#F0F9FF', // Tailwind blue-50 converted to hex
+        divider: '#93C5FD'    // Tailwind blue-300 converted to hex
     },
-    { name: 'Sky Blue', 
-      header: 'bg-sky-100', 
-      contactInfo: 'bg-sky-50', 
-      divider: 'border-sky-300' 
+    { 
+        name: 'Sky Blue', 
+        headerBg: '#E0F2FE',  // Tailwind sky-100 converted to hex
+        contactBg: '#F0F9FF', // Tailwind sky-50 converted to hex
+        divider: '#7DD3FC'    // Tailwind sky-300 converted to hex
     },
-    { name: 'Indigo', 
-      header: 'bg-indigo-100', 
-      contactInfo: 'bg-indigo-50', 
-      divider: 'border-indigo-300' 
+    { 
+        name: 'Indigo', 
+        headerBg: '#E0E7FF',
+        contactBg: '#EEF2FF', 
+        divider: '#A5B4FC' 
     },
-    { name: 'Teal', 
-      header: 'bg-teal-100', 
-      contactInfo: 'bg-teal-50', 
-      divider: 'border-teal-300' 
+    { 
+        name: 'Teal', 
+        headerBg: '#F0FDFA',
+        contactBg: '#F5FFFE',
+        divider: '#5EEAD4'
     },
-    { name: 'Default Gray', 
-      header: 'bg-gray-100', 
-      contactInfo: 'bg-gray-50', 
-      divider: 'border-gray-300' 
+    { 
+        name: 'Default Gray', 
+        headerBg: '#F3F4F6',
+        contactBg: '#F9FAFB',
+        divider: '#D1D5DB'
     }
 ];
 
@@ -107,8 +112,6 @@ const CVGenerator = () => {
             { language: 'Inglés', level: 'B2' }
         ]
     });
-    
-    const cvRef = useRef(null);
 
     const handleLanguageChange = (index, field, value) => {
         const newLanguages = [...formData.languages];
@@ -141,19 +144,6 @@ const CVGenerator = () => {
     };
     reader.readAsDataURL(file);
   };
-
-  const exportToPDF = async () => {
-    const input = cvRef.current;
-    const canvas = await html2canvas(input, { scale: 2 });
-    const imgData = canvas.toDataURL('image/png');
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const imgProps = pdf.getImageProperties(imgData);
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-    
-    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-    pdf.save(`CV-${formData.lastName}-${formData.name}.pdf`);
-};
 
 useEffect(() => {
     const savedCV = localStorage.getItem('savedCV');
@@ -615,19 +605,20 @@ useEffect(() => {
                                     <div className="mt-2 grid grid-cols-3 gap-2">
                                         {COLOR_PALETTES.map((palette, index) => (
                                             <button
-                                                key={index}
-                                                onClick={() => {
-                                                    setColorPalette(palette);
-                                                    setShowColorPalette(false);
-                                                }}
-                                                className={`
-                                                    p-2 rounded 
-                                                    ${palette.header} 
-                                                    hover:border-2 hover:border-blue-500
-                                                `}
-                                            >
-                                                {palette.name}
-                                            </button>
+                                            key={index}
+                                            onClick={() => {
+                                                setColorPalette(palette);
+                                                setShowColorPalette(false);
+                                            }}
+                                            style={{ backgroundColor: palette.headerBg }}
+                                            
+                                            className={`
+                                                p-2 rounded 
+                                                hover:border-2 hover:border-blue-500
+                                            `}
+                                        >
+                                            {palette.name}
+                                        </button>                                        
                                         ))}
                                     </div>
                                 )}
@@ -725,151 +716,17 @@ useEffect(() => {
                     <h2 className="text-2xl font-bold mb-6 text-gray-800 border-b pb-3">
                         Vista Previa
                     </h2>
-                    <div 
-                        ref={cvRef} 
-                        className="bg-white p-8 shadow-lg"
-                        style={{ 
-                            width: '210mm', 
-                            height: '297mm', 
-                            margin: '0 auto', 
-                            boxSizing: 'border-box',
-                            fontFamily: 'Arial, sans-serif'
-                        }}
-                    >
-                        {/* Header */}
-                        <div className={`${colorPalette.header} p-4 mb-6 rounded-s-full rounded-ee-full`}>
-                            <div className="flex items-center">
-                                {formData.profileImage ? (
-                                    <img 
-                                        src={formData.profileImage} 
-                                        alt="Perfil" 
-                                        className="w-32 h-32 rounded-full object-cover mr-6"
-                                    />
-                                ) : (
-                                    <div className="w-32 h-32 bg-gray-300 rounded-full mr-6"></div>
-                                )}
-                                <div>
-                                    <h1 className="text-3xl font-bold text-gray-800">
-                                        {formData.name} {formData.lastName}
-                                    </h1>
-                                    <p className="text-xl text-gray-600 uppercase tracking-wider">
-                                        {formData.title}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Contact Info */}
-                        <div className={`flex justify-between mb-6 text-gray-700 ${colorPalette.contactInfo} p-3 rounded-lg`}>
-                            <div className="flex items-center">
-                                <MapPin className="mr-2 text-gray-500" />
-                                <span>{formData.contact.location}</span>
-                            </div>
-                            <div className="flex items-center">
-                                <Phone className="mr-2 text-gray-500" />
-                                <span>{formData.contact.phone}</span>
-                            </div>
-                            <div className="flex items-center">
-                                <Mail className="mr-2 text-gray-500" />
-                                <span>{formData.contact.email}</span>
-                            </div>
-                        </div>
-
-                        {/* Main Content */}
-                        <div className="grid grid-cols-3 gap-6">
-                            {/* Left Column */}
-                            <div className="col-span-1">
-                                {/* Summary */}
-                                <div className="mb-6">
-                                        <h2 className={`text-xl font-bold uppercase tracking-wider border-b-2 ${colorPalette.divider} pb-2 mb-3`}>
-                                            Resumen
-                                        </h2>
-                                        <p className="text-sm">{formData.summary}</p>
-                                    </div>
-
-                                {/* Skills */}
-                                <div className="mb-6">
-                                <h2 className={`text-xl font-bold uppercase tracking-wider border-b-2 ${colorPalette.divider} pb-2 mb-3`}>
-                                            Conocimientos
-                                        </h2>
-                                    <ul className="list-disc pl-5 text-sm">
-                                        {formData.skills.map((skill, index) => (
-                                            <li key={index}>{skill}</li>
-                                        ))}
-                                    </ul>
-                                </div>
-
-                                {/* Languages */}
-                                <div className="mb-6">
-                                    <h2 className={`text-xl font-bold uppercase tracking-wider border-b-2 ${colorPalette.divider} pb-2 mb-3`}>
-                                        Idiomas
-                                    </h2>
-                                    <ul className="text-sm">
-                                        {formData.languages.map(({ language, level }, index) => (
-                                            <li key={index}>{language} - {level}</li>
-                                        ))}
-                                    </ul>
-                                </div>
-
-                                {/* Social Links */}
-                                <div>
-                                    <h2 className={`text-xl font-bold uppercase tracking-wider border-b-2 ${colorPalette.divider} pb-2 mb-3`}>
-                                        Links
-                                    </h2>
-                                    <div className="flex space-x-4">
-                                        <a href={formData.contact.github} target="_blank" rel="noopener noreferrer">
-                                            <Github className="text-gray-600 hover:text-blue-500" />
-                                        </a>
-                                        <a href={formData.contact.linkedin} target="_blank" rel="noopener noreferrer">
-                                            <Linkedin className="text-gray-600 hover:text-blue-500" />
-                                        </a>
-                                        <a href={formData.contact.portfolio} target="_blank" rel="noopener noreferrer">
-                                            <Globe className="text-gray-600 hover:text-blue-500" />
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Right Column */}
-                            <div className="col-span-2">
-                                {/* Education */}
-                                <div className="mb-6">
-                                    <h2 className={`text-xl font-bold uppercase tracking-wider border-b-2 ${colorPalette.divider} pb-2 mb-3`}>
-                                        Formación Académica
-                                    </h2>
-                                    {formData.education.map((edu, index) => (
-                                        <div key={index} className="mb-4">
-                                            <h3 className="font-bold text-gray-800">{edu.degree}</h3>
-                                            <p className="text-gray-600">{edu.institution}</p>
-                                            <p className="text-sm text-gray-500">{edu.period}</p>
-                                        </div>
-                                    ))}
-                                </div>
-
-                                {/* Work Experience */}
-                                <div>
-                                    <h2 className={`text-xl font-bold uppercase tracking-wider border-b-2 ${colorPalette.divider} pb-2 mb-3`}>
-                                        Experiencia Laboral
-                                    </h2>
-                                    {formData.workExperience.map((job, index) => (
-                                        <div key={index} className="mb-4">
-                                            <h3 className="font-bold text-gray-800">{job.company}</h3>
-                                            <p className="text-gray-600">{job.period}</p>
-                                            <ul className="list-disc pl-5 text-sm">
-                                                {job.roles.map((role, roleIndex) => (
-                                                    <li key={roleIndex}>{role}</li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                     
+                    {/* Preview usando PDFViewer (opcional) */}
+                    <PDFViewer width="100%" height="500">
+                        <CVPreview formData={formData} colorPalette={colorPalette} />
+                    </PDFViewer>
+
+                    {/* Botón de descarga de PDF */}
                     <div className="mt-6 flex justify-center">
-                        <button 
-                            onClick={exportToPDF}
+                        <PDFDownloadLink
+                            document={<CVPreview formData={formData} colorPalette={colorPalette} />}
+                            fileName={`CV_${formData.name}_${formData.lastName}.pdf`}
                             className="
                                 flex items-center 
                                 bg-gradient-to-r from-blue-500 to-blue-600 
@@ -884,11 +741,14 @@ useEffect(() => {
                                 hover:-translate-y-1
                             "
                         >
-                            <Mail className="mr-2" />
-                            Exportar a PDF
-                            </button>
-                        </div>
+                            {({ loading }) => (
+                                loading 
+                                    ? 'Generando PDF...' 
+                                    : 'Descargar PDF'
+                            )}
+                        </PDFDownloadLink>
                     </div>
+                </div>
                 )}
             </div>
         </div>
