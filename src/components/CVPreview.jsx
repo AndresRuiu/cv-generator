@@ -361,7 +361,7 @@ CVPreview.propTypes = {
 
 CVPreview.defaultProps = {
     formData: {
-        profileImage: null,
+        profileImage: '/foto-perfil.jpeg',
         name: '',
         lastName: '',
         title: '',
