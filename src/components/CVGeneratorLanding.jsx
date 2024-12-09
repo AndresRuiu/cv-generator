@@ -51,24 +51,26 @@ const CVGeneratorLanding = () => {
                     Exportación a PDF
                   </li>
                 </ul>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="
-                    bg-gradient-to-r from-blue-500 to-blue-600 
-                    text-white 
-                    px-6 py-3 
-                    rounded-lg 
-                    shadow-lg 
-                    hover:shadow-xl 
-                    transition-all 
-                    flex items-center 
-                    space-x-2
-                  "
-                >
-                  <Link to="/cv-generator">Crear mi CV Ahora</Link>
-                  <ArrowRight className="ml-2" />
-                </motion.button>
+                <Link to="/cv-generator">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="
+                      bg-gradient-to-r from-blue-500 to-blue-600 
+                      text-white 
+                      px-6 py-3 
+                      rounded-lg 
+                      shadow-lg 
+                      hover:shadow-xl 
+                      transition-all 
+                      flex items-center 
+                      space-x-2
+                    "
+                  >
+                    Crear mi CV Ahora
+                    <ArrowRight className="ml-2" />
+                  </motion.button>
+                </Link>
               </div>
               <motion.div 
                 initial={{ opacity: 0, x: 50 }}
