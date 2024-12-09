@@ -124,7 +124,7 @@ const CVPreview = ({ formData, colorPalette }) => {
         },
         contactItem: {
             flexDirection: 'row',
-            alignItems: 'center',
+            alignItems: 'center', 
             justifyContent: 'center',
             color: '#374151',
             gap: 8,
@@ -223,15 +223,21 @@ const CVPreview = ({ formData, colorPalette }) => {
                 <View style={styles.contactSection}>
                     <View style={styles.contactItem}>
                         <MapPinIcon />
-                        <Text> {formData.contact.location}</Text>
+                        <View style={{ paddingTop:'3px' }}>
+                            <Text> {formData.contact.location}</Text>
+                        </View>
                     </View>
                     <View style={styles.contactItem}>
                         <PhoneIcon />
-                        <Text> {formData.contact.phone}</Text>
+                        <View style={{paddingTop:'5px' }}>
+                            <Text> {formData.contact.phone}</Text>
+                        </View>
                     </View>
                     <View style={styles.contactItem}>
                         <MailIcon/>
-                        <Text> {formData.contact.email}</Text>
+                        <View style={{ paddingTop:'3px' }}>
+                            <Text> {formData.contact.email}</Text>
+                        </View>
                     </View>
                 </View>
 

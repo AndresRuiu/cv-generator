@@ -276,6 +276,11 @@ const CVGenerator = () => {
                         className="bg-white rounded-2xl shadow-2xl overflow-hidden"
                     >
                         {activeTab === 'edit' && (
+                        <div className="p-6">
+                            <h2 className="text-3xl font-bold mb-6 md:text-center text-blue-800 border-b-2 border-blue-200 pb-3">
+                                Personaliza tu Currículum
+                            </h2> 
+
                             <CVForm 
                                 initialData={formData}
                                 onSave={handleSaveForm}
@@ -289,10 +294,11 @@ const CVGenerator = () => {
                                 LANGUAGE_OPTIONS={LANGUAGE_OPTIONS}
                                 toast={toast}
                             />
+                        </div>
                         )}
                         {activeTab === 'preview' && (
                             <div className="p-6">
-                                <h2 className="text-3xl font-bold mb-6 text-blue-800 border-b-2 border-blue-200 pb-3">
+                                <h2 className="text-3xl font-bold mb-6 md:text-center text-blue-800 border-b-2 border-blue-200 pb-3">
                                     Vista Previa de tu Currículum
                                 </h2>
                                 

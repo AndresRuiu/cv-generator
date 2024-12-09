@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 
 const CVGeneratorLanding = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex flex-col justify-center">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex flex-col justify-center px-2">
       <div className="container mx-auto px-4 py-16 max-w-6xl">
         <motion.div 
           initial={{ opacity: 0, y: 50 }}
@@ -13,10 +13,10 @@ const CVGeneratorLanding = () => {
           className="text-center"
         >
           <h1 className="text-5xl font-extrabold text-blue-900 mb-4">
-            Transforma tu Carrera con un CV Impecable
+            Transforma tu Carrera con un Curriculum Impecable
           </h1>
           <p className="text-xl text-blue-700 mb-8 max-w-3xl mx-auto">
-            Crea un currículum profesional, elegante y personalizado en minutos. 
+            Crea un CV profesional, elegante y personalizado en minutos. 
             Destaca tus logros y aumenta tus posibilidades de conseguir tu próximo trabajo.
           </p>
         </motion.div>
@@ -28,16 +28,16 @@ const CVGeneratorLanding = () => {
           className="flex justify-center mt-10"
         >
           <div className="bg-white shadow-2xl rounded-xl p-8 w-full max-w-4xl">
-            <div className="grid md:grid-cols-2 gap-8 items-center">
-              <div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+              <div className="order-1 md:order-1 text-center flex flex-col justify-center items-center md:items-start md:text-left">
                 <h2 className="text-3xl font-bold text-blue-800 mb-4">
-                  Tu CV, Tu Historia
+                  Tu Curriculum, Tu Historia
                 </h2>
                 <p className="text-blue-600 mb-6">
                   Diseña un currículum que cuente tu historia profesional de manera única. 
                   Con herramientas intuitivas y diseños modernos, destacarás entre los demás.
                 </p>
-                <ul className="space-y-3 mb-6 text-blue-700">
+                <ul className="space-y-3 mb-6 text-blue-700 hidden md:block">
                   <li className="flex items-center">
                     <ArrowRight className="mr-2 text-blue-500" />
                     Diseños profesionales
@@ -51,42 +51,45 @@ const CVGeneratorLanding = () => {
                     Exportación a PDF
                   </li>
                 </ul>
-                <Link to="/cv-generator">
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="
-                      bg-gradient-to-r from-blue-500 to-blue-600 
-                      text-white 
-                      px-6 py-3 
-                      rounded-lg 
-                      shadow-lg 
-                      hover:shadow-xl 
-                      transition-all 
-                      flex items-center 
-                      space-x-2
-                    "
-                  >
-                    Crear mi CV Ahora
-                    <ArrowRight className="ml-2" />
-                  </motion.button>
-                </Link>
-              </div>
-              <motion.div 
-                initial={{ opacity: 0, x: 50 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.6, delay: 0.6 }}
-                className="flex justify-center"
-              >
-                <div className="relative flex justify-center">
-                  <div className="absolute -inset-2 bg-blue-200 rounded-xl blur-lg opacity-50"></div>
-                  <img 
-                    src="./cv-ejemplo.jpg" 
-                    alt="CV Preview" 
-                    className="relative z-10 rounded-xl shadow-2xl w-[80%]"
-                  />
+                <div className="flex justify-start md:justify-start">
+                  <Link to="/cv-generator">
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="
+                        bg-gradient-to-r from-blue-500 to-blue-600 
+                        text-white 
+                        px-6 py-3 
+                        rounded-lg 
+                        shadow-lg 
+                        hover:shadow-xl 
+                        transition-all 
+                        flex items-center 
+                        space-x-2
+                      "
+                    >
+                      Crear mi CV Ahora
+                      <ArrowRight className="ml-2 hidden md:block" />
+                    </motion.button>
+                  </Link>
                 </div>
-              </motion.div>
+              </div>
+
+              <motion.div 
+                  initial={{ opacity: 0, x: 50 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.6, delay: 0.6 }}
+                  className='order-2'
+                >
+                  <div className="relative flex justify-center">
+                    <div className="absolute -inset-2 bg-blue-200 rounded-xl blur-lg opacity-50"></div>
+                    <img 
+                      src="./cv-ejemplo.jpg" 
+                      alt="CV Preview" 
+                      className="relative z-10 rounded-xl shadow-2xl w-[90%] md:w-[80%]"
+                    />
+                  </div>
+                </motion.div>
             </div>
           </div>
         </motion.div>
@@ -98,7 +101,7 @@ const CVGeneratorLanding = () => {
           className="text-center mt-16"
         >
           <h3 className="text-3xl font-bold text-blue-900 mb-4">
-            Beneficios de Usar Nuestro Generador de CV
+            Beneficios de Usar Nuestro Generador de Curriculum
           </h3>
           <div className="grid md:grid-cols-3 gap-8 mt-10">
             {[

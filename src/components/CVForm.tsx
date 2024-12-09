@@ -273,14 +273,10 @@ const CVForm: React.FC<CVFormProps> = ({
 
     return (
         <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="p-6">
-                <h2 className="text-2xl font-bold mb-6 text-gray-800 border-b pb-3">
-                    Personaliza tu Currículum
-                </h2>
-                
-                <div className="space-y-6">
+            <form onSubmit={form.handleSubmit(onSubmit)}>
+                <div className="space-y-6 p-2 sm:p-4">
                     {/* Imagen de Perfil */}
-                    <Card>
+                    <Card className="w-full">
                         <CardHeader>
                             <CardTitle>Imagen de Perfil</CardTitle>
                         </CardHeader>
@@ -293,6 +289,7 @@ const CVForm: React.FC<CVFormProps> = ({
                                         <Input 
                                             type="file" 
                                             accept="image/*"
+                                            className="w-full"
                                             onChange={(e) => {
                                                 handleImageUpload(e);
                                                 field.onChange(e);
@@ -311,26 +308,28 @@ const CVForm: React.FC<CVFormProps> = ({
                             <CardTitle>Datos Personales</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <FormField
-                                control={form.control}
-                                name="name"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Nombres</FormLabel>
-                                        <FormControl>
-                                            <Input 
-                                                {...field}
-                                                onChange={(e) => {
-                                                    field.onChange(e);
-                                                    handleDirectInputChange('name', e.target.value);
-                                                }}
-                                            />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <FormField
+                                    control={form.control}
+                                    name="name"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Nombres</FormLabel>
+                                            <FormControl>
+                                                <Input 
+                                                    {...field}
+                                                    className="w-full"
+                                                    onChange={(e) => {
+                                                        field.onChange(e);
+                                                        handleDirectInputChange('name', e.target.value);
+                                                    }}
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+
                                 <FormField
                                     control={form.control}
                                     name="lastName"
@@ -563,68 +562,72 @@ const CVForm: React.FC<CVFormProps> = ({
         
                     {/* Habilidades */}
                     <Card>
-                        <CardHeader>
-                            <CardTitle>Habilidades</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <FormField
-                                control={form.control}
-                                name="skills"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        {field.value.map((skill, index) => (
-                                            <div key={index} className="flex items-center mb-2 space-x-2">
-                                                <FormControl>
-                                                    <Input 
-                                                        type="text"
-                                                        value={skill}
-                                                        onChange={(e) => {
-                                                            const newSkills = [...field.value];
-                                                            newSkills[index] = e.target.value;
-                                                            field.onChange(newSkills);
-                                                        }}
-                                                    />
-                                                </FormControl>
-                                                <Button 
-                                                    variant="destructive"
-                                                    size="icon"
-                                                    type="button"
-                                                    onClick={() => {
-                                                        const newSkills = field.value.filter((_, i) => i !== index);
+                    <CardHeader>
+                        <CardTitle>Habilidades</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <FormField
+                            control={form.control}
+                            name="skills"
+                            render={({ field }) => (
+                                <FormItem>
+                                    {field.value.map((skill, index) => (
+                                        <div key={index} className="flex flex-col sm:flex-row items-center mb-2 space-y-2 sm:space-y-0 sm:space-x-2">
+                                            <FormControl className="w-full">
+                                                <Input 
+                                                    type="text"
+                                                    value={skill}
+                                                    className="w-full"
+                                                    onChange={(e) => {
+                                                        const newSkills = [...field.value];
+                                                        newSkills[index] = e.target.value;
                                                         field.onChange(newSkills);
                                                     }}
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                            </div>
-                                        ))}
-                                        <Button 
-                                            type="button"
-                                            onClick={() => field.onChange([...field.value, 'Nueva Habilidad'])}
-                                            className="mt-2"
-                                        >
-                                            Agregar Habilidad
-                                        </Button>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                        </CardContent>
-                    </Card>
+                                                />
+                                            </FormControl>
+                                            <Button 
+                                                variant="destructive"
+                                                size="sm"
+                                                type="button"
+                                                className="w-full sm:w-auto"
+                                                onClick={() => {
+                                                    const newSkills = field.value.filter((_, i) => i !== index);
+                                                    field.onChange(newSkills);
+                                                }}
+                                            >
+                                                <Trash2 className="h-4 w-4 mr-2" /> Eliminar
+                                            </Button>
+                                        </div>
+                                    ))}
+                                    <Button 
+                                        type="button"
+                                        variant="outline"
+                                        className="mt-2 w-full bg-green-500 hover:bg-green-600 text-white"
+                                        onClick={() => field.onChange([...field.value, 'Nueva Habilidad'])}
+                                    >
+                                        Agregar Habilidad
+                                    </Button>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    </CardContent>
+                </Card>
         
                     {/* Education Section */}
                     <Card>
-                        <CardHeader>
-                            <CardTitle>Educación</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <FormField
-                                control={form.control}
-                                name="education"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        {field.value.map((edu, index) => (
-                                            <div key={index} className="space-y-2 mb-4 p-4 border rounded">
+                    <CardHeader>
+                        <CardTitle>Educación</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <FormField
+                            control={form.control}
+                            name="education"
+                            render={({ field }) => (
+                                <FormItem>
+                                    {field.value.map((edu, index) => (
+                                        <div key={index} className="space-y-2 mb-4 p-4 border rounded">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                                 <FormControl>
                                                     <Input 
                                                         placeholder="Título"
@@ -655,56 +658,59 @@ const CVForm: React.FC<CVFormProps> = ({
                                                         }}
                                                     />
                                                 </FormControl>
-                                                <FormControl>
-                                                    <Input 
-                                                        placeholder="Período"
-                                                        value={edu.period}
-                                                        onChange={(e) => {
-                                                            const newEducation = [...field.value];
-                                                            newEducation[index] = {
-                                                                ...newEducation[index],
-                                                                period: e.target.value
-                                                            };
-                                                            field.onChange(newEducation);
-                                                            handleDirectInputChange('education', newEducation);
-                                                        }}
-                                                    />
-                                                </FormControl>
-                                                {field.value.length > 1 && (
-                                                    <Button 
-                                                        variant="destructive"
-                                                        type="button"
-                                                        onClick={() => {
-                                                            const newEducation = field.value.filter((_, i) => i !== index);
-                                                            field.onChange(newEducation);
-                                                            handleDirectInputChange('education', newEducation);
-                                                        }}
-                                                    >
-                                                        Eliminar Educación
-                                                    </Button>
-                                                )}
                                             </div>
-                                        ))}
-                                        <Button 
-                                            type="button"
-                                            onClick={() => {
-                                                const newEducation = [
-                                                    ...field.value, 
-                                                    { degree: '', institution: '', period: '' }
-                                                ];
-                                                field.onChange(newEducation);
-                                                handleDirectInputChange('education', newEducation);
-                                            }}
-                                            className="mt-2"
-                                        >
-                                            Agregar Educación
-                                        </Button>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                        </CardContent>
-                    </Card>
+                                            <FormControl>
+                                                <Input 
+                                                    placeholder="Período"
+                                                    value={edu.period}
+                                                    onChange={(e) => {
+                                                        const newEducation = [...field.value];
+                                                        newEducation[index] = {
+                                                            ...newEducation[index],
+                                                            period: e.target.value
+                                                        };
+                                                        field.onChange(newEducation);
+                                                        handleDirectInputChange('education', newEducation);
+                                                    }}
+                                                />
+                                            </FormControl>
+                                            {field.value.length > 1 && (
+                                                <Button 
+                                                    variant="destructive"
+                                                    type="button"
+                                                    className="mt-2 w-full sm:w-auto"
+                                                    onClick={() => {
+                                                        const newEducation = field.value.filter((_, i) => i !== index);
+                                                        field.onChange(newEducation);
+                                                        handleDirectInputChange('education', newEducation);
+                                                    }}
+                                                >
+                                                    Eliminar Educación
+                                                </Button>
+                                            )}
+                                        </div>
+                                    ))}
+                                    <Button 
+                                        type="button"
+                                        variant="outline"
+                                        className="mt-2 w-full bg-green-500 hover:bg-green-600 text-white"
+                                        onClick={() => {
+                                            const newEducation = [
+                                                ...field.value, 
+                                                { degree: '', institution: '', period: '' }
+                                            ];
+                                            field.onChange(newEducation);
+                                            handleDirectInputChange('education', newEducation);
+                                        }}
+                                    >
+                                        Agregar Educación
+                                    </Button>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    </CardContent>
+                </Card>
 
                     {/* Work Experience Section */}
                     <Card>
@@ -719,39 +725,41 @@ const CVForm: React.FC<CVFormProps> = ({
                                     <FormItem>
                                         {field.value.map((exp, index) => (
                                             <div key={index} className="space-y-2 mb-4 p-4 border rounded">
-                                                <FormControl>
-                                                    <Input 
-                                                        placeholder="Empresa"
-                                                        value={exp.company}
-                                                        onChange={(e) => {
-                                                            const newWorkExperience = [...field.value];
-                                                            newWorkExperience[index] = {
-                                                                ...newWorkExperience[index],
-                                                                company: e.target.value
-                                                            };
-                                                            field.onChange(newWorkExperience);
-                                                            handleDirectInputChange('workExperience', newWorkExperience);
-                                                        }}
-                                                    />
-                                                </FormControl>
-                                                <FormControl>
-                                                    <Input 
-                                                        placeholder="Período"
-                                                        value={exp.period}
-                                                        onChange={(e) => {
-                                                            const newWorkExperience = [...field.value];
-                                                            newWorkExperience[index] = {
-                                                                ...newWorkExperience[index],
-                                                                period: e.target.value
-                                                            };
-                                                            field.onChange(newWorkExperience);
-                                                            handleDirectInputChange('workExperience', newWorkExperience);
-                                                        }}
-                                                    />
-                                                </FormControl>
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                    <FormControl>
+                                                        <Input 
+                                                            placeholder="Empresa"
+                                                            value={exp.company}
+                                                            onChange={(e) => {
+                                                                const newWorkExperience = [...field.value];
+                                                                newWorkExperience[index] = {
+                                                                    ...newWorkExperience[index],
+                                                                    company: e.target.value
+                                                                };
+                                                                field.onChange(newWorkExperience);
+                                                                handleDirectInputChange('workExperience', newWorkExperience);
+                                                            }}
+                                                        />
+                                                    </FormControl>
+                                                    <FormControl>
+                                                        <Input 
+                                                            placeholder="Período"
+                                                            value={exp.period}
+                                                            onChange={(e) => {
+                                                                const newWorkExperience = [...field.value];
+                                                                newWorkExperience[index] = {
+                                                                    ...newWorkExperience[index],
+                                                                    period: e.target.value
+                                                                };
+                                                                field.onChange(newWorkExperience);
+                                                                handleDirectInputChange('workExperience', newWorkExperience);
+                                                            }}
+                                                        />
+                                                    </FormControl>
+                                                </div>
                                                 {exp.roles.map((role, roleIndex) => (
-                                                    <div key={roleIndex} className="flex items-center space-x-2">
-                                                        <FormControl>
+                                                    <div key={roleIndex} className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-2">
+                                                        <FormControl className="w-full">
                                                             <Input 
                                                                 placeholder="Rol"
                                                                 value={role}
@@ -770,8 +778,9 @@ const CVForm: React.FC<CVFormProps> = ({
                                                         </FormControl>
                                                         <Button 
                                                             variant="destructive"
-                                                            size="icon"
+                                                            size="sm"
                                                             type="button"
+                                                            className="w-full sm:w-auto"
                                                             onClick={() => {
                                                                 const newWorkExperience = [...field.value];
                                                                 newWorkExperience[index] = {
@@ -781,13 +790,16 @@ const CVForm: React.FC<CVFormProps> = ({
                                                                 field.onChange(newWorkExperience);
                                                                 handleDirectInputChange('workExperience', newWorkExperience);
                                                             }}
+                                        
                                                         >
-                                                            <Trash2 className="h-4 w-4" />
+                                                            <Trash2 className="h-4 w-4 mr-2" /> Eliminar
                                                         </Button>
                                                     </div>
                                                 ))}
                                                 <Button 
                                                     type="button"
+                                                    variant="outline"
+                                                    className="mt-2 w-full bg-green-500 hover:bg-green-600 text-white"
                                                     onClick={() => {
                                                         const newWorkExperience = [...field.value];
                                                         newWorkExperience[index] = {
@@ -797,7 +809,6 @@ const CVForm: React.FC<CVFormProps> = ({
                                                         field.onChange(newWorkExperience);
                                                         handleDirectInputChange('workExperience', newWorkExperience);
                                                     }}
-                                                    className="mt-2"
                                                 >
                                                     Agregar Rol
                                                 </Button>
@@ -805,12 +816,12 @@ const CVForm: React.FC<CVFormProps> = ({
                                                     <Button 
                                                         variant="destructive"
                                                         type="button"
+                                                        className="mt-2 w-full sm:w-auto"
                                                         onClick={() => {
                                                             const newWorkExperience = field.value.filter((_, i) => i !== index);
                                                             field.onChange(newWorkExperience);
                                                             handleDirectInputChange('workExperience', newWorkExperience);
                                                         }}
-                                                        className="ml-2"
                                                     >
                                                         Eliminar Experiencia
                                                     </Button>
@@ -819,6 +830,8 @@ const CVForm: React.FC<CVFormProps> = ({
                                         ))}
                                         <Button 
                                             type="button"
+                                            variant="outline"
+                                            className="mt-2 w-full bg-green-500 hover:bg-green-600 text-white"
                                             onClick={() => {
                                                 const newWorkExperience = [
                                                     ...field.value, 
@@ -827,7 +840,6 @@ const CVForm: React.FC<CVFormProps> = ({
                                                 field.onChange(newWorkExperience);
                                                 handleDirectInputChange('workExperience', newWorkExperience);
                                             }}
-                                            className="mt-2"
                                         >
                                             Agregar Experiencia
                                         </Button>
@@ -930,6 +942,7 @@ const CVForm: React.FC<CVFormProps> = ({
                                                             }}
                                                         >
                                                             <Trash2 className="h-4 w-4" />
+                                                            Eliminar
                                                         </Button>
                                                     )}
                                                 </div>
@@ -948,7 +961,7 @@ const CVForm: React.FC<CVFormProps> = ({
                                                     field.onChange(newLanguages);
                                                     handleDirectInputChange('languages', newLanguages);
                                                 }}
-                                                className="mt-2 w-full"
+                                                className="mt-2 w-full bg-green-500 hover:bg-green-600 text-white"
                                                 variant="outline"
                                             >
                                                 Agregar Idioma
@@ -1003,18 +1016,20 @@ const CVForm: React.FC<CVFormProps> = ({
                 </Card>
         
                     {/* Action Buttons */}
-                    <div className="flex justify-between mt-6">
+                    <div className="flex flex-col sm:flex-row justify-between space-y-4 sm:space-y-0 sm:space-x-4 mt-6">
                         <Button 
                             type="button"
                             onClick={resetToDefault}
                             variant="secondary"
+                            className="w-full sm:w-auto"
                         >
-                            Restaurar Valores Predeterminados
+                            Restaurar Valores
                         </Button>
         
                         <Button 
                             type="submit"
                             variant="default"
+                            className="w-full sm:w-auto"
                         >
                             Guardar CV
                         </Button>
@@ -1022,7 +1037,7 @@ const CVForm: React.FC<CVFormProps> = ({
                 </div>
             </form>
         </Form>
-        );
+    );
 };
 
 export default CVForm;
