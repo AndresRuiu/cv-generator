@@ -1,6 +1,13 @@
-import { useState,useEffect } from 'react';
-import {Edit, Eye} from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Edit, Eye, Home } from 'lucide-react';
 import { PDFDownloadLink, PDFViewer } from '@react-pdf/renderer';
+import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
+import { 
+  ToastProvider, 
+  ToastViewport, 
+} from '@/components/ui/toast';
+import { useToast } from '@//hooks/use-toast';
 import CVPreview from './CVPreview'; 
 import CVForm from './CVForm';
 
@@ -38,14 +45,18 @@ const COLOR_PALETTES = [
 ];
 
 const LANGUAGE_OPTIONS = [
-    { language: 'Inglés', level: 'B1' },
-    { language: 'Inglés', level: 'B2' },
-    { language: 'Inglés', level: 'C1' },
-    { language: 'Español', level: 'Nativo' },
-    { language: 'Portugués', level: 'A2' }
+    { language: 'Español', levels: ['A1', 'A2', 'B1', 'B2', 'C1', 'C2','Nativo'] },
+    { language: 'Inglés', levels: ['A1', 'A2', 'B1', 'B2', 'C1', 'C2','Nativo'] },
+    { language: 'Francés', levels: ['A1', 'A2', 'B1', 'B2', 'C1', 'C2','Nativo'] },
+    { language: 'Alemán', levels: ['A1', 'A2', 'B1', 'B2', 'C1', 'C2','Nativo'] },
+    { language: 'Portugués', levels: ['A1', 'A2', 'B1', 'B2', 'C1', 'C2','Nativo'] },
+    { language: 'Italiano', levels: ['A1', 'A2', 'B1', 'B2', 'C1', 'C2','Nativo'] },
+    { language: 'Chino', levels: ['A1', 'A2', 'B1', 'B2', 'C1', 'C2','Nativo'] },
+    { language: 'Ruso', levels: ['A1', 'A2', 'B1', 'B2', 'C1', 'C2','Nativo'] }
 ];
 
 const CVGenerator = () => {
+    const { toast } = useToast();
     const [activeTab, setActiveTab] = useState('edit');
     const [colorPalette, setColorPalette] = useState(COLOR_PALETTES[0]);
     const [formData, setFormData] = useState({
@@ -113,6 +124,19 @@ const CVGenerator = () => {
         ]
     });
 
+    // Generalized update function for nested objects
+    const updateFormData = (path, value) => {
+        const updateNestedState = (obj, path, value) => {
+            const keys = path.split('.');
+            const lastKey = keys.pop();
+            const target = keys.reduce((acc, key) => acc[key], obj);
+            target[lastKey] = value;
+            return { ...obj };
+        };
+
+        setFormData(prevData => updateNestedState(prevData, path, value));
+    };
+
     const handleLanguageChange = (index, field, value) => {
         const newLanguages = [...formData.languages];
         newLanguages[index] = { ...newLanguages[index], [field]: value };
@@ -133,115 +157,193 @@ const CVGenerator = () => {
         }
     };
 
-  const handleImageUpload = (e) => {
-    const file = e.target.files[0];
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setFormData(prev => ({
-        ...prev,
-        profileImage: reader.result
-      }));
+    const handleImageUpload = (e) => {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            updateFormData('profileImage', reader.result);
+        };
+        reader.readAsDataURL(file);
     };
-    reader.readAsDataURL(file);
-  };
 
-useEffect(() => {
-    const savedCV = localStorage.getItem('savedCV');
-    if (savedCV) {
-      setFormData(JSON.parse(savedCV));
-    }
-  }, []);
+    useEffect(() => {
+        const savedCV = localStorage.getItem('savedCV');
+        if (savedCV) {
+            setFormData(JSON.parse(savedCV));
+        }
+    }, []);
 
-  return (
-    <div className="container mx-auto px-4 py-6 max-w-6xl">
-        {/* Tab Selector */}
-        <div className="flex mb-6 bg-gray-100 rounded-lg p-1 shadow-sm">
-            <button 
-                onClick={() => setActiveTab('edit')}
-                className={`
-                    flex-1 flex items-center justify-center py-3 rounded-lg transition-all duration-300 
-                    ${activeTab === 'edit' 
-                        ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md' 
-                        : 'text-gray-600 hover:bg-gray-200'}
-                `}
-            >
-                <Edit className="mr-2" size={20} />
-                Editar Currículum
-            </button>
-            <button 
-                onClick={() => setActiveTab('preview')}
-                className={`
-                    flex-1 flex items-center justify-center py-3 rounded-lg transition-all duration-300
-                    ${activeTab === 'preview' 
-                        ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-md' 
-                        : 'text-gray-600 hover:bg-gray-200'}
-                `}
-            >
-                <Eye className="mr-2" size={20} />
-                Vista Previa
-            </button>
-        </div>
+    const handleSaveForm = (formValues) => {
+        const updatedFormData = {
+            ...formValues,
+            colorPalette: formValues.colorPalette || colorPalette
+        };
 
-        {/* Formulario de Edición */}
-        <div className="bg-white rounded-xl shadow-xl overflow-hidden">
-        {activeTab === 'edit' && (
-    <CVForm 
-        formData={formData} 
-        setFormData={setFormData}  // Add this line
-        colorPalette={colorPalette}  // Add this line
-        setColorPalette={setColorPalette}  // Add this line
-        onSave={() => {
-            // Implement save functionality, e.g., saving to localStorage
-            localStorage.setItem('savedCV', JSON.stringify(formData));
-        }}  // Add this line
-        onImageUpload={handleImageUpload}
-        onLanguageChange={handleLanguageChange}
-        onAddLanguage={addLanguage}
-        onRemoveLanguage={removeLanguage}
-        languageOptions={LANGUAGE_OPTIONS}
-    />
-)}
-        {activeTab === 'preview' && (
-                <div className="sticky top-4 p-6">
-                    <h2 className="text-2xl font-bold mb-6 text-gray-800 border-b pb-3">
-                        Vista Previa
-                    </h2>
-                    
-                    {/* Preview usando PDFViewer (opcional) */}
-                    <PDFViewer width="100%" height="500">
-                        <CVPreview formData={formData} colorPalette={colorPalette} />
-                    </PDFViewer>
+        setFormData(updatedFormData);
+        setColorPalette(updatedFormData.colorPalette);
+        localStorage.setItem('savedCV', JSON.stringify(updatedFormData));
+        
+        toast({
+            title: "Currículum Guardado",
+            description: "Los cambios se han guardado exitosamente.",
+            duration: 3000,
+        });
+    };
 
-                    {/* Botón de descarga de PDF */}
-                    <div className="mt-6 flex justify-center">
-                        <PDFDownloadLink
-                            document={<CVPreview formData={formData} colorPalette={colorPalette} />}
-                            fileName={`CV_${formData.name}_${formData.lastName}.pdf`}
+    return (
+        <ToastProvider>
+            <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 py-10">
+                <div className="container mx-auto px-4 max-w-6xl">
+                    {/* Return to Home Button */}
+                    <motion.div
+                        initial={{ opacity: 0, x: -50 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.5 }}
+                        className="bottom-6 left-6 fixed md:absolute md:top-6"
+                    >
+                        <Link 
+                            to="/" 
                             className="
                                 flex items-center 
-                                bg-gradient-to-r from-blue-500 to-blue-600 
-                                text-white 
-                                px-6 py-3 
+                                bg-white 
+                                text-blue-700 
+                                px-3 py-3 
                                 rounded-lg 
                                 shadow-md 
-                                hover:shadow-xl 
+                                hover:bg-blue-50 
                                 transition-all 
-                                duration-300 
-                                transform 
-                                hover:-translate-y-1
+                                group
                             "
                         >
-                            {({ loading }) => (
-                                loading 
-                                    ? 'Generando PDF...' 
-                                    : 'Descargar PDF'
-                            )}
-                        </PDFDownloadLink>
-                    </div>
+                            <Home className="group-hover:-scale-x-100 transition-transform" />
+                        </Link>
+                    </motion.div>
+
+                    {/* Título y Descripción */}
+                    <motion.div 
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5 }}
+                        className="text-center mb-10"
+                    >
+                        <h1 className="text-5xl font-extrabold text-blue-900 mb-4">
+                            Generador de Currículum
+                        </h1>
+                        <p className="text-xl text-blue-700 max-w-2xl mx-auto">
+                            Diseña un currículum que cuente tu historia profesional. 
+                            Personaliza cada detalle y destaca tus logros.
+                        </p>
+                    </motion.div>
+    
+                    {/* Tab Selector with Enhanced Design */}
+                    <motion.div 
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.5 }}
+                        className="flex mb-6 bg-white rounded-xl shadow-lg p-1.5 max-w-md mx-auto"
+                    >
+                        <button 
+                            onClick={() => setActiveTab('edit')}
+                            className={`
+                                flex-1 flex items-center justify-center py-3 rounded-lg transition-all duration-300 
+                                ${activeTab === 'edit' 
+                                    ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md' 
+                                    : 'text-gray-600 hover:bg-blue-50'}
+                            `}
+                        >
+                            <Edit className="mr-2" size={20} />
+                            Editar CV
+                        </button>
+                        <button 
+                            onClick={() => setActiveTab('preview')}
+                            className={`
+                                flex-1 flex items-center justify-center py-3 rounded-lg transition-all duration-300
+                                ${activeTab === 'preview' 
+                                    ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-md' 
+                                    : 'text-gray-600 hover:bg-blue-50'}
+                            `}
+                        >
+                            <Eye className="mr-2" size={20} />
+                            Vista Previa
+                        </button>
+                    </motion.div>
+    
+                    {/* Content Container with Enhanced Design */}
+                    <motion.div 
+                        initial={{ opacity: 0, y: 50 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.6 }}
+                        className="bg-white rounded-2xl shadow-2xl overflow-hidden"
+                    >
+                        {activeTab === 'edit' && (
+                            <CVForm 
+                                initialData={formData}
+                                onSave={handleSaveForm}
+                                colorPalette={colorPalette}
+                                setColorPalette={setColorPalette}
+                                updateFormData={updateFormData}
+                                onImageUpload={handleImageUpload}
+                                onLanguageChange={handleLanguageChange}
+                                onAddLanguage={addLanguage}
+                                onRemoveLanguage={removeLanguage}
+                                LANGUAGE_OPTIONS={LANGUAGE_OPTIONS}
+                                toast={toast}
+                            />
+                        )}
+                        {activeTab === 'preview' && (
+                            <div className="p-6">
+                                <h2 className="text-3xl font-bold mb-6 text-blue-800 border-b-2 border-blue-200 pb-3">
+                                    Vista Previa de tu Currículum
+                                </h2>
+                                
+                                {/* Preview usando PDFViewer */}
+                                <PDFViewer width="100%" height="500" className="rounded-xl shadow-inner">
+                                    <CVPreview formData={formData} colorPalette={colorPalette} />
+                                </PDFViewer>
+    
+                                {/* PDF Download Button with Enhanced Design */}
+                                <div className="mt-6 flex justify-center">
+                                    <PDFDownloadLink
+                                        document={<CVPreview formData={formData} colorPalette={colorPalette} />}
+                                        fileName={`CV_${formData.name}_${formData.lastName}.pdf`}
+                                        onClick={() => {
+                                            toast({
+                                                title: "CV Descargado",
+                                                description: `CV de ${formData.name} ${formData.lastName} generado con éxito.`,
+                                                duration: 3000,
+                                            });
+                                        }}                                    
+                                        className="
+                                            flex items-center 
+                                            bg-gradient-to-r from-blue-500 to-blue-600 
+                                            text-white 
+                                            px-8 py-4 
+                                            rounded-xl 
+                                            shadow-xl 
+                                            hover:shadow-2xl 
+                                            transition-all 
+                                            duration-300 
+                                            transform 
+                                            hover:-translate-y-1
+                                            text-lg
+                                            font-semibold
+                                        "
+                                    >
+                                        {({ loading }) => (
+                                            loading 
+                                                ? 'Generando PDF...' 
+                                                : 'Descargar CV en PDF'
+                                        )}
+                                    </PDFDownloadLink>
+                                </div>
+                            </div>
+                        )}
+                    </motion.div>
                 </div>
-                )}
+    
+                <ToastViewport />
             </div>
-        </div>
+        </ToastProvider>
     );
 };
 

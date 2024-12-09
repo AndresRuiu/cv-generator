@@ -1,5 +1,16 @@
-import{ useState} from 'react';
-import { Palette } from 'lucide-react';
+import React, { useState } from 'react';
+import { z } from 'zod';
+import { SubmitHandler, useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Palette, Trash2 } from 'lucide-react';
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useToast } from '@/hooks/use-toast';
 
 interface ColorPalette {
     name: string;
@@ -47,7 +58,6 @@ interface FormData {
     languages: LanguageEntry[];
 }
 
-// Constants
 const COLOR_PALETTES: ColorPalette[] = [
     { 
         name: 'Blue Ocean', 
@@ -82,67 +92,95 @@ const COLOR_PALETTES: ColorPalette[] = [
 ];
 
 const LANGUAGE_OPTIONS = [
-    { language: 'Inglés', level: 'B1' },
-    { language: 'Inglés', level: 'B2' },
-    { language: 'Inglés', level: 'C1' },
-    { language: 'Español', level: 'Nativo' },
-    { language: 'Portugués', level: 'A2' }
+    { language: 'Español', levels: ['A1', 'A2', 'B1', 'B2', 'C1', 'C2','Nativo'] },
+    { language: 'Inglés', levels: ['A1', 'A2', 'B1', 'B2', 'C1', 'C2','Nativo'] },
+    { language: 'Francés', levels: ['A1', 'A2', 'B1', 'B2', 'C1', 'C2','Nativo'] },
+    { language: 'Alemán', levels: ['A1', 'A2', 'B1', 'B2', 'C1', 'C2','Nativo'] },
+    { language: 'Portugués', levels: ['A1', 'A2', 'B1', 'B2', 'C1', 'C2','Nativo'] },
+    { language: 'Italiano', levels: ['A1', 'A2', 'B1', 'B2', 'C1', 'C2','Nativo'] },
+    { language: 'Chino', levels: ['A1', 'A2', 'B1', 'B2', 'C1', 'C2','Nativo'] },
+    { language: 'Ruso', levels: ['A1', 'A2', 'B1', 'B2', 'C1', 'C2','Nativo'] }
 ];
 
 // Component Props Interface
+const CVFormSchema = z.object({
+    profileImage: z.string().nullable(),
+    name: z.string().min(1, "Nombres es requerido"),
+    lastName: z.string().min(1, "Apellidos es requerido"),
+    title: z.string().min(1, "Título Profesional es requerido"),
+    contact: z.object({
+        location: z.string().min(1, "Ubicación es requerida"),
+        phone: z.string().min(1, "Teléfono es requerido"),
+        email: z.string().email("Email inválido"),
+        linkedin: z.string().url("URL de LinkedIn inválida").optional(),
+        github: z.string().url("URL de GitHub inválida").optional(),
+        portfolio: z.string().url("URL de Portfolio inválida").optional(),
+    }),
+    summary: z.string().optional(),
+    skills: z.array(z.string()).min(1, "Debe tener al menos una habilidad"),
+    education: z.array(z.object({
+        degree: z.string().min(1, "Título es requerido"),
+        institution: z.string().min(1, "Institución es requerida"),
+        period: z.string().min(1, "Período es requerido"),
+    })),
+    workExperience: z.array(z.object({
+        company: z.string().min(1, "Empresa es requerida"),
+        period: z.string().min(1, "Período es requerido"),
+        roles: z.array(z.string()).min(1, "Debe tener al menos un rol"),
+    })),
+    languages: z.array(z.object({
+        language: z.string().min(1, "Idioma es requerido"),
+        level: z.string().min(1, "Nivel es requerido"),
+    })),
+    colorPalette: z.object({
+        name: z.string(),
+        headerBg: z.string(),
+        contactBg: z.string(),
+        divider: z.string()
+    })
+});
+
+type CVFormData = z.infer<typeof CVFormSchema>;
+
 interface CVFormProps {
-    formData: FormData;
-    setFormData: React.Dispatch<React.SetStateAction<FormData>>;
-    colorPalette: ColorPalette;
-    setColorPalette: React.Dispatch<React.SetStateAction<ColorPalette>>;
-    onSave: () => void;
+    initialData?: CVFormData;
+    onSave: (data: CVFormData) => void;
+    updateFormData?: (path: keyof CVFormData, value: any) => void;
+    colorPalette?: ColorPalette;
+    setColorPalette?: (palette: ColorPalette) => void;
+    onImageUpload?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    toast?: (options: {
+        title: string;
+        description: string;
+        duration?: number;
+    }) => void;
 }
 
 const CVForm: React.FC<CVFormProps> = ({ 
-    formData, 
-    setFormData, 
-    colorPalette, 
-    setColorPalette, 
-    onSave 
+    initialData,
+    onSave, 
+    updateFormData,
+    onImageUpload,
+    toast
 }) => {
     const [showColorPalette, setShowColorPalette] = useState(false);
+    const { toast: hookToast } = useToast();
+    const showToast = toast || hookToast;
 
-    const handleLanguageChange = (index: number, field: keyof LanguageEntry, value: string) => {
-        const newLanguages = [...formData.languages];
-        newLanguages[index] = { ...newLanguages[index], [field]: value };
-        setFormData(prev => ({ ...prev, languages: newLanguages }));
-    };
-
-    const addLanguage = () => {
-        setFormData(prev => ({
-            ...prev,
-            languages: [...prev.languages, { language: 'Nuevo Idioma', level: 'A1' }]
-        }));
-    };
-
-    const removeLanguage = (index: number) => {
-        if (formData.languages.length > 1) {
-            const newLanguages = formData.languages.filter((_, i) => i !== index);
-            setFormData(prev => ({ ...prev, languages: newLanguages }));
-        }
-    };
+    const form = useForm<CVFormData>({
+        resolver: zodResolver(CVFormSchema),
+        defaultValues: initialData
+    });
 
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setFormData(prev => ({
-                    ...prev,
-                    profileImage: reader.result as string
-                }));
-            };
-            reader.readAsDataURL(file);
+        if (file && onImageUpload) {
+            onImageUpload(e);
         }
     };
 
     const resetToDefault = () => {
-        setFormData({
+        const defaultData: CVFormData = {
             profileImage: null,
             name: 'Santiago',
             lastName: 'Peralta',
@@ -195,468 +233,796 @@ const CVForm: React.FC<CVFormProps> = ({
             languages: [
                 { language: 'Español', level: 'Nativo' },
                 { language: 'Inglés', level: 'B2' }
-            ]
+            ],
+            colorPalette: COLOR_PALETTES[0]
+        };
+
+        Object.keys(defaultData).forEach(key => {
+            form.setValue(key as keyof CVFormData, defaultData[key as keyof CVFormData]);
+        });
+
+        Object.keys(defaultData).forEach(key => {
+            form.setValue(key as keyof CVFormData, defaultData[key as keyof CVFormData]);
+        });
+
+        // Usa showToast en lugar de toast directamente
+        showToast({
+            title: "Valores Restablecidos",
+            description: "Se han restaurado los valores predeterminados del CV.",
+            duration: 3000,
         });
     };
 
+    const onSubmit: SubmitHandler<CVFormData> = (data) => {
+        onSave(data);
+        showToast({
+            title: "CV Guardado",
+            description: "Los cambios en tu currículum han sido guardados exitosamente.",
+            duration: 3000,
+        });
+    };
+    const handleDirectInputChange = (
+        field: keyof CVFormData, 
+        value: any
+    ) => {
+        if (updateFormData) {
+            updateFormData(field, value);
+        }
+        form.setValue(field, value);
+    };
+
     return (
-        <div className="p-6">
-                        <h2 className="text-2xl font-bold mb-6 text-gray-800 border-b pb-3">
-                            Personaliza tu Currículum
-                        </h2>
-        
-        <div className="space-y-6">
-        {/* Imagen de Perfil */}
-        <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700">Imagen de Perfil</label>
-            <input 
-            type="file" 
-            accept="image/*"
-            onChange={handleImageUpload}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-            />
-        </div>
-
-        {/* Datos Personales */}
-        <div className="bg-gray-100 p-4 rounded-lg">
-            <h3 className="text-lg font-semibold mb-4">Datos Personales</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-                <label className="block text-sm font-medium text-gray-700">Nombres</label>
-                <input 
-                type="text"
-                value={formData.name}
-                onChange={(e) => setFormData(prev => ({...prev, name: e.target.value}))}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                />
-            </div>
-            <div>
-                <label className="block text-sm font-medium text-gray-700">Apellidos</label>
-                <input 
-                type="text"
-                value={formData.lastName}
-                onChange={(e) => setFormData(prev => ({...prev, lastName: e.target.value}))}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                />
-            </div>
-            <div>
-                <label className="block text-sm font-medium text-gray-700">Título Profesional</label>
-                <input 
-                type="text"
-                value={formData.title}
-                onChange={(e) => setFormData(prev => ({...prev, title: e.target.value}))}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                />
-            </div>
-            </div>
-        </div>
-
-        {/* Información de Contacto */}
-        <div className="bg-gray-100 p-4 rounded-lg">
-            <h3 className="text-lg font-semibold mb-4">Información de Contacto</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-                <label className="block text-sm font-medium text-gray-700">Ubicación</label>
-                <input 
-                type="text"
-                value={formData.contact.location}
-                onChange={(e) => setFormData(prev => ({
-                    ...prev, 
-                    contact: {...prev.contact, location: e.target.value}
-                }))}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                />
-            </div>
-            <div>
-                <label className="block text-sm font-medium text-gray-700">Teléfono</label>
-                <input 
-                type="tel"
-                value={formData.contact.phone}
-                onChange={(e) => setFormData(prev => ({
-                    ...prev, 
-                    contact: {...prev.contact, phone: e.target.value}
-                }))}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                />
-            </div>
-            <div>
-                <label className="block text-sm font-medium text-gray-700">Email</label>
-                <input 
-                type="email"
-                value={formData.contact.email}
-                onChange={(e) => setFormData(prev => ({
-                    ...prev, 
-                    contact: {...prev.contact, email: e.target.value}
-                }))}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                />
-            </div>
-            </div>
-        </div>
-
-        {/* Redes Sociales */}
-        <div className="bg-gray-100 p-4 rounded-lg">
-            <h3 className="text-lg font-semibold mb-4">Redes Sociales</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-                <label className="block text-sm font-medium text-gray-700">LinkedIn</label>
-                <input 
-                type="url"
-                value={formData.contact.linkedin}
-                onChange={(e) => setFormData(prev => ({
-                    ...prev, 
-                    contact: {...prev.contact, linkedin: e.target.value}
-                }))}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                />
-            </div>
-            <div>
-                <label className="block text-sm font-medium text-gray-700">GitHub</label>
-                <input 
-                type="url"
-                value={formData.contact.github}
-                onChange={(e) => setFormData(prev => ({
-                    ...prev, 
-                    contact: {...prev.contact, github: e.target.value}
-                }))}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                />
-            </div>
-            <div>
-                <label className="block text-sm font-medium text-gray-700">Portfolio</label>
-                <input 
-                type="url"
-                value={formData.contact.portfolio}
-                onChange={(e) => setFormData(prev => ({
-                    ...prev, 
-                    contact: {...prev.contact, portfolio: e.target.value}
-                }))}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                />
-            </div>
-            </div>
-        </div>
-
-        {/* Resumen */}
-        <div className="bg-gray-100 p-4 rounded-lg">
-            <h3 className="text-lg font-semibold mb-4">Resumen Profesional</h3>
-            <textarea 
-            value={formData.summary}
-            onChange={(e) => setFormData(prev => ({...prev, summary: e.target.value}))}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 h-24"
-            placeholder="Escribe un breve resumen sobre tu perfil profesional"
-            />
-        </div>
-
-        {/* Habilidades */}
-        <div className="bg-gray-100 p-4 rounded-lg">
-            <h3 className="text-lg font-semibold mb-4">Habilidades</h3>
-            {formData.skills.map((skill, index) => (
-            <div key={index} className="flex items-center mb-2">
-                <input 
-                type="text"
-                value={skill}
-                onChange={(e) => {
-                    const newSkills = [...formData.skills];
-                    newSkills[index] = e.target.value;
-                    setFormData(prev => ({...prev, skills: newSkills}));
-                }}
-                className="flex-grow mr-2 block rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                />
-                <button 
-                onClick={() => {
-                    const newSkills = formData.skills.filter((_, i) => i !== index);
-                    setFormData(prev => ({...prev, skills: newSkills}));
-                }}
-                className="bg-red-500 text-white px-2 py-1 rounded"
-                >
-                Eliminar
-                </button>
-            </div>
-            ))}
-            <button 
-            onClick={() => setFormData(prev => ({
-                ...prev, 
-                skills: [...prev.skills, 'Nueva Habilidad']
-            }))}
-            className="mt-2 bg-green-500 text-white px-4 py-2 rounded"
-            >
-            Agregar Habilidad
-            </button>
-        </div>
-
-        {/* Formación Académica */}
-        <div className="bg-gray-100 p-4 rounded-lg">
-            <h3 className="text-lg font-semibold mb-4">Formación Académica</h3>
-            {formData.education.map((edu, index) => (
-            <div key={index} className="mb-4 p-3 bg-white rounded-lg">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label className="block text-sm font-medium text-gray-700">Título</label>
-                    <input 
-                    type="text"
-                    value={edu.degree}
-                    onChange={(e) => {
-                        const newEducation = [...formData.education];
-                        newEducation[index].degree = e.target.value;
-                        setFormData(prev => ({...prev, education: newEducation}));
-                    }}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                    />
-                </div>
-                <div>
-                    <label className="block text-sm font-medium text-gray-700">Institución</label>
-                    <input 
-                    type="text"
-                    value={edu.institution}
-                    onChange={(e) => {
-                        const newEducation = [...formData.education];
-                        newEducation[index].institution = e.target.value;
-                        setFormData(prev => ({...prev, education: newEducation}));
-                    }}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                    />
-                </div>
-                </div>
-                <div className="mt-2">
-                <label className="block text-sm font-medium text-gray-700">Período</label>
-                <input 
-                    type="text"
-                    value={edu.period}
-                    onChange={(e) => {
-                    const newEducation = [...formData.education];
-                    newEducation[index].period = e.target.value;
-                    setFormData(prev => ({...prev, education: newEducation}));
-                    }}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                />
-                </div>
-                {formData.education.length > 1 && (
-                <button 
-                    onClick={() => {
-                    const newEducation = formData.education.filter((_, i) => i !== index);
-                    setFormData(prev => ({...prev, education: newEducation}));
-                    }}
-                    className="mt-2 bg-red-500 text-white px-2 py-1 rounded"
-                >
-                    Eliminar
-                </button>
-                )}
-            </div>
-            ))}
-            <button 
-            onClick={() => setFormData(prev => ({
-                ...prev, 
-                education: [...prev.education, {
-                degree: 'Nuevo Título',
-                institution: 'Nueva Institución',
-                period: 'Período'
-                }]
-            }))}
-            className="mt-2 bg-green-500 text-white px-4 py-2 rounded"
-            >
-            Agregar Formación
-            </button>
-        </div>
-
-        {/* Experiencia Laboral */}
-        <div className="bg-gray-100 p-4 rounded-lg">
-            <h3 className="text-lg font-semibold mb-4">Experiencia Laboral</h3>
-            {formData.workExperience.map((job, index) => (
-            <div key={index} className="mb-4 p-3 bg-white rounded-lg">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label className="block text-sm font-medium text-gray-700">Empresa</label>
-                    <input 
-                    type="text"
-                    value={job.company}
-                    onChange={(e) => {
-                        const newWorkExperience = [...formData.workExperience];
-                        newWorkExperience[index].company = e.target.value;
-                        setFormData(prev => ({...prev, workExperience: newWorkExperience}));
-                    }}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                    />
-                </div>
-                <div>
-                    <label className="block text-sm font-medium text-gray-700">Período</label>
-                    <input 
-                    type="text"
-                    value={job.period}
-                    onChange={(e) => {
-                        const newWorkExperience = [...formData.workExperience];
-                        newWorkExperience[index].period = e.target.value;
-                        setFormData(prev => ({...prev, workExperience: newWorkExperience}));
-                    }}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                    />
-                </div>
-                </div>
-                <div className="mt-2">
-                <label className="block text-sm font-medium text-gray-700">Roles y Responsabilidades</label>
-                {job.roles.map((role, roleIndex) => (
-                    <div key={roleIndex} className="flex items-center mb-2">
-                    <input 
-                        type="text"
-                        value={role}
-                        onChange={(e) => {
-                        const newWorkExperience = [...formData.workExperience];
-                        newWorkExperience[index].roles[roleIndex] = e.target.value;
-                        setFormData(prev => ({...prev, workExperience: newWorkExperience}));
-                        }}
-                        className="flex-grow mr-2 block rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                    />
-                    <button 
-                        onClick={() => {
-                        const newWorkExperience = [...formData.workExperience];
-                        newWorkExperience[index].roles = newWorkExperience[index].roles.filter((_, i) => i !== roleIndex);
-                        setFormData(prev => ({...prev, workExperience: newWorkExperience}));
-                        }}
-                        className="bg-red-500 text-white px-2 py-1 rounded"
-                    >
-                        Eliminar
-                    </button>
-                    </div>
-                ))}
-                <button 
-                    onClick={() => {
-                        const newWorkExperience = [...formData.workExperience];
-                        newWorkExperience[index].roles.push('Nuevo Rol');
-                        setFormData(prev => ({...prev, workExperience: newWorkExperience}));
-                    }}
-                    className="mt-2 bg-green-500 text-white px-2 py-1 rounded"
-                    >
-                    Agregar Rol
-                    </button>
-                </div>
+        <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="p-6">
+                <h2 className="text-2xl font-bold mb-6 text-gray-800 border-b pb-3">
+                    Personaliza tu Currículum
+                </h2>
                 
-                {formData.workExperience.length > 1 && (
-                    <button 
-                    onClick={() => {
-                        const newWorkExperience = formData.workExperience.filter((_, i) => i !== index);
-                        setFormData(prev => ({...prev, workExperience: newWorkExperience}));
-                    }}
-                    className="mt-2 bg-red-500 text-white px-2 py-1 rounded"
-                    >
-                    Eliminar Experiencia
-                    </button>
-                )}
-                </div>
-            ))}
-            
-            <button 
-                onClick={() => setFormData(prev => ({
-                ...prev, 
-                workExperience: [...prev.workExperience, {
-                    company: 'Nueva Empresa',
-                    period: 'Período',
-                    roles: ['Nuevo Rol']
-                }]
-                }))}
-                className="mt-2 bg-green-500 text-white px-4 py-2 rounded"
-            >
-                Agregar Experiencia Laboral
-            </button>
-            </div>
-
-            <div className="bg-gray-100 p-4 rounded-lg">
-                            <h3 className="text-lg font-semibold mb-4">Idiomas</h3>
-                                {formData.languages.map((lang, index) => (
-                                    <div key={index} className="flex items-center mb-2 space-x-2">
-                                        <select
-                                            value={lang.language}
-                                            onChange={(e) => handleLanguageChange(index, 'language', e.target.value)}
-                                            className="flex-grow mr-2 block rounded-md border-gray-300 shadow-sm"
-                                        >
-                                            {LANGUAGE_OPTIONS.map((option, optIndex) => (
-                                                <option key={optIndex} value={option.language}>
-                                                    {option.language}
-                                                </option>
-                                            ))}
-                                        </select>
-                                        <select
-                                            value={lang.level}
-                                            onChange={(e) => handleLanguageChange(index, 'level', e.target.value)}
-                                            className="flex-grow mr-2 block rounded-md border-gray-300 shadow-sm"
-                                        >
-                                            {[...new Set(LANGUAGE_OPTIONS.map(opt => opt.level))].map((level, levelIndex) => (
-                                                <option key={levelIndex} value={level}>
-                                                    {level}
-                                                </option>
-                                            ))}
-                                        </select>
-                                        {formData.languages.length > 1 && (
-                                            <button 
-                                                onClick={() => removeLanguage(index)}
-                                                className="bg-red-500 text-white px-2 py-1 rounded"
-                                            >
-                                                Eliminar
-                                            </button>
-                                        )}
-                                    </div>
-                                ))}
-                                <button 
-                                    onClick={addLanguage}
-                                    className="mt-2 bg-green-500 text-white px-4 py-2 rounded"
-                                >
-                                    Agregar Idioma
-                                </button>
+                <div className="space-y-6">
+                    {/* Imagen de Perfil */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Imagen de Perfil</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <FormField
+                                control={form.control}
+                                name="profileImage"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <Input 
+                                            type="file" 
+                                            accept="image/*"
+                                            onChange={(e) => {
+                                                handleImageUpload(e);
+                                                field.onChange(e);
+                                            }}
+                                        />
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </CardContent>
+                    </Card>
+        
+                    {/* Datos Personales */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Datos Personales</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField
+                                control={form.control}
+                                name="name"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Nombres</FormLabel>
+                                        <FormControl>
+                                            <Input 
+                                                {...field}
+                                                onChange={(e) => {
+                                                    field.onChange(e);
+                                                    handleDirectInputChange('name', e.target.value);
+                                                }}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                                <FormField
+                                    control={form.control}
+                                    name="lastName"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Apellidos</FormLabel>
+                                            <FormControl>
+                                                <Input 
+                                                    {...field}
+                                                    onChange={(e) => {
+                                                        field.onChange(e);
+                                                        handleDirectInputChange('lastName', e.target.value);
+                                                    }}
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="title"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Título Profesional</FormLabel>
+                                            <FormControl>
+                                                <Input 
+                                                    {...field}
+                                                    onChange={(e) => {
+                                                        field.onChange(e);
+                                                        handleDirectInputChange('title', e.target.value);
+                                                    }}
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
                             </div>
-
-                {/* Color Palette Section */}
-                <div className="bg-gray-100 p-4 rounded-lg mt-4">
-                    <h3 className="text-lg font-semibold mb-4">Paleta de Colores</h3>
-                    <div className="flex items-center space-x-2">
-                        <button 
-                            onClick={() => setShowColorPalette(!showColorPalette)}
-                            className="flex items-center bg-blue-500 text-white px-4 py-2 rounded"
-                        >
-                            <Palette className="mr-2" />
-                            {showColorPalette ? 'Ocultar Paleta' : 'Seleccionar Color'}
-                        </button>
-                        <span className="text-gray-600">Color Actual: {colorPalette.name}</span>
-                    </div>
-                    {showColorPalette && (
-                        <div className="mt-2 grid grid-cols-3 gap-2">
-                            {COLOR_PALETTES.map((palette, index) => (
-                                <button
-                                    key={index}
-                                    onClick={() => {
-                                        setColorPalette(palette);
-                                        setShowColorPalette(false);
-                                    }}
-                                    style={{ backgroundColor: palette.headerBg }}
-                                    className={`
-                                        p-2 rounded 
-                                        hover:border-2 hover:border-blue-500
-                                    `}
-                                >
-                                    {palette.name}
-                                </button>                                        
-                            ))}
+                        </CardContent>
+                    </Card>
+        
+                    {/* Información de Contacto */}
+                    <Card>
+                    <CardHeader>
+                        <CardTitle>Información de Contacto</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <FormField
+                                control={form.control}
+                                name="contact.location"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Ubicación</FormLabel>
+                                        <FormControl>
+                                            <Input 
+                                                {...field} 
+                                                type="text"
+                                                onChange={(e) => {
+                                                    field.onChange(e);
+                                                    handleDirectInputChange('contact', {
+                                                        ...form.getValues('contact'),
+                                                        location: e.target.value
+                                                    });
+                                                }}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="contact.phone"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Teléfono</FormLabel>
+                                        <FormControl>
+                                            <Input 
+                                                {...field} 
+                                                type="tel"
+                                                onChange={(e) => {
+                                                    field.onChange(e);
+                                                    handleDirectInputChange('contact', {
+                                                        ...form.getValues('contact'),
+                                                        phone: e.target.value
+                                                    });
+                                                }}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="contact.email"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Email</FormLabel>
+                                        <FormControl>
+                                            <Input 
+                                                {...field} 
+                                                type="email"
+                                                onChange={(e) => {
+                                                    field.onChange(e);
+                                                    handleDirectInputChange('contact', {
+                                                        ...form.getValues('contact'),
+                                                        email: e.target.value
+                                                    });
+                                                }}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
                         </div>
-                    )}
-                </div>
+                    </CardContent>
+                </Card>
+    
+                {/* Redes Sociales */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Redes Sociales</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <FormField
+                                control={form.control}
+                                name="contact.linkedin"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>LinkedIn</FormLabel>
+                                        <FormControl>
+                                            <Input 
+                                                {...field} 
+                                                type="url"
+                                                onChange={(e) => {
+                                                    field.onChange(e);
+                                                    handleDirectInputChange('contact', {
+                                                        ...form.getValues('contact'),
+                                                        linkedin: e.target.value
+                                                    });
+                                                }}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="contact.github"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>GitHub</FormLabel>
+                                        <FormControl>
+                                            <Input 
+                                                {...field} 
+                                                type="url"
+                                                onChange={(e) => {
+                                                    field.onChange(e);
+                                                    handleDirectInputChange('contact', {
+                                                        ...form.getValues('contact'),
+                                                        github: e.target.value
+                                                    });
+                                                }}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="contact.portfolio"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Portfolio</FormLabel>
+                                        <FormControl>
+                                            <Input 
+                                                {...field} 
+                                                type="url"
+                                                onChange={(e) => {
+                                                    field.onChange(e);
+                                                    handleDirectInputChange('contact', {
+                                                        ...form.getValues('contact'),
+                                                        portfolio: e.target.value
+                                                    });
+                                                }}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
+                    </CardContent>
+                </Card>
+    
+                {/* Resumen */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Resumen Profesional</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <FormField
+                            control={form.control}
+                            name="summary"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormControl>
+                                        <Textarea 
+                                            {...field}
+                                            placeholder="Escribe un breve resumen sobre tu perfil profesional"
+                                            onChange={(e) => {
+                                                field.onChange(e);
+                                                handleDirectInputChange('summary', e.target.value);
+                                            }}
+                                        />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    </CardContent>
+                </Card>
+        
+                    {/* Habilidades */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Habilidades</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <FormField
+                                control={form.control}
+                                name="skills"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        {field.value.map((skill, index) => (
+                                            <div key={index} className="flex items-center mb-2 space-x-2">
+                                                <FormControl>
+                                                    <Input 
+                                                        type="text"
+                                                        value={skill}
+                                                        onChange={(e) => {
+                                                            const newSkills = [...field.value];
+                                                            newSkills[index] = e.target.value;
+                                                            field.onChange(newSkills);
+                                                        }}
+                                                    />
+                                                </FormControl>
+                                                <Button 
+                                                    variant="destructive"
+                                                    size="icon"
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const newSkills = field.value.filter((_, i) => i !== index);
+                                                        field.onChange(newSkills);
+                                                    }}
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        ))}
+                                        <Button 
+                                            type="button"
+                                            onClick={() => field.onChange([...field.value, 'Nueva Habilidad'])}
+                                            className="mt-2"
+                                        >
+                                            Agregar Habilidad
+                                        </Button>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </CardContent>
+                    </Card>
+        
+                    {/* Education Section */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Educación</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <FormField
+                                control={form.control}
+                                name="education"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        {field.value.map((edu, index) => (
+                                            <div key={index} className="space-y-2 mb-4 p-4 border rounded">
+                                                <FormControl>
+                                                    <Input 
+                                                        placeholder="Título"
+                                                        value={edu.degree}
+                                                        onChange={(e) => {
+                                                            const newEducation = [...field.value];
+                                                            newEducation[index] = {
+                                                                ...newEducation[index],
+                                                                degree: e.target.value
+                                                            };
+                                                            field.onChange(newEducation);
+                                                            handleDirectInputChange('education', newEducation);
+                                                        }}
+                                                    />
+                                                </FormControl>
+                                                <FormControl>
+                                                    <Input 
+                                                        placeholder="Institución"
+                                                        value={edu.institution}
+                                                        onChange={(e) => {
+                                                            const newEducation = [...field.value];
+                                                            newEducation[index] = {
+                                                                ...newEducation[index],
+                                                                institution: e.target.value
+                                                            };
+                                                            field.onChange(newEducation);
+                                                            handleDirectInputChange('education', newEducation);
+                                                        }}
+                                                    />
+                                                </FormControl>
+                                                <FormControl>
+                                                    <Input 
+                                                        placeholder="Período"
+                                                        value={edu.period}
+                                                        onChange={(e) => {
+                                                            const newEducation = [...field.value];
+                                                            newEducation[index] = {
+                                                                ...newEducation[index],
+                                                                period: e.target.value
+                                                            };
+                                                            field.onChange(newEducation);
+                                                            handleDirectInputChange('education', newEducation);
+                                                        }}
+                                                    />
+                                                </FormControl>
+                                                {field.value.length > 1 && (
+                                                    <Button 
+                                                        variant="destructive"
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const newEducation = field.value.filter((_, i) => i !== index);
+                                                            field.onChange(newEducation);
+                                                            handleDirectInputChange('education', newEducation);
+                                                        }}
+                                                    >
+                                                        Eliminar Educación
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        ))}
+                                        <Button 
+                                            type="button"
+                                            onClick={() => {
+                                                const newEducation = [
+                                                    ...field.value, 
+                                                    { degree: '', institution: '', period: '' }
+                                                ];
+                                                field.onChange(newEducation);
+                                                handleDirectInputChange('education', newEducation);
+                                            }}
+                                            className="mt-2"
+                                        >
+                                            Agregar Educación
+                                        </Button>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </CardContent>
+                    </Card>
 
-                {/* Action Buttons */}
-                <div className="flex justify-between mt-6">
-                    <button 
-                        onClick={resetToDefault}
-                        className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
-                    >
-                        Restaurar Valores Predeterminados
-                    </button>
-            
-                    <button 
-                        onClick={onSave}
-                        className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
-                    >
-                        Guardar CV
-                    </button>
+                    {/* Work Experience Section */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Experiencia Laboral</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <FormField
+                                control={form.control}
+                                name="workExperience"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        {field.value.map((exp, index) => (
+                                            <div key={index} className="space-y-2 mb-4 p-4 border rounded">
+                                                <FormControl>
+                                                    <Input 
+                                                        placeholder="Empresa"
+                                                        value={exp.company}
+                                                        onChange={(e) => {
+                                                            const newWorkExperience = [...field.value];
+                                                            newWorkExperience[index] = {
+                                                                ...newWorkExperience[index],
+                                                                company: e.target.value
+                                                            };
+                                                            field.onChange(newWorkExperience);
+                                                            handleDirectInputChange('workExperience', newWorkExperience);
+                                                        }}
+                                                    />
+                                                </FormControl>
+                                                <FormControl>
+                                                    <Input 
+                                                        placeholder="Período"
+                                                        value={exp.period}
+                                                        onChange={(e) => {
+                                                            const newWorkExperience = [...field.value];
+                                                            newWorkExperience[index] = {
+                                                                ...newWorkExperience[index],
+                                                                period: e.target.value
+                                                            };
+                                                            field.onChange(newWorkExperience);
+                                                            handleDirectInputChange('workExperience', newWorkExperience);
+                                                        }}
+                                                    />
+                                                </FormControl>
+                                                {exp.roles.map((role, roleIndex) => (
+                                                    <div key={roleIndex} className="flex items-center space-x-2">
+                                                        <FormControl>
+                                                            <Input 
+                                                                placeholder="Rol"
+                                                                value={role}
+                                                                onChange={(e) => {
+                                                                    const newWorkExperience = [...field.value];
+                                                                    newWorkExperience[index] = {
+                                                                        ...newWorkExperience[index],
+                                                                        roles: newWorkExperience[index].roles.map((r, rI) => 
+                                                                            rI === roleIndex ? e.target.value : r
+                                                                        )
+                                                                    };
+                                                                    field.onChange(newWorkExperience);
+                                                                    handleDirectInputChange('workExperience', newWorkExperience);
+                                                                }}
+                                                            />
+                                                        </FormControl>
+                                                        <Button 
+                                                            variant="destructive"
+                                                            size="icon"
+                                                            type="button"
+                                                            onClick={() => {
+                                                                const newWorkExperience = [...field.value];
+                                                                newWorkExperience[index] = {
+                                                                    ...newWorkExperience[index],
+                                                                    roles: newWorkExperience[index].roles.filter((_, rI) => rI !== roleIndex)
+                                                                };
+                                                                field.onChange(newWorkExperience);
+                                                                handleDirectInputChange('workExperience', newWorkExperience);
+                                                            }}
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </div>
+                                                ))}
+                                                <Button 
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const newWorkExperience = [...field.value];
+                                                        newWorkExperience[index] = {
+                                                            ...newWorkExperience[index],
+                                                            roles: [...newWorkExperience[index].roles, 'Nuevo Rol']
+                                                        };
+                                                        field.onChange(newWorkExperience);
+                                                        handleDirectInputChange('workExperience', newWorkExperience);
+                                                    }}
+                                                    className="mt-2"
+                                                >
+                                                    Agregar Rol
+                                                </Button>
+                                                {field.value.length > 1 && (
+                                                    <Button 
+                                                        variant="destructive"
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const newWorkExperience = field.value.filter((_, i) => i !== index);
+                                                            field.onChange(newWorkExperience);
+                                                            handleDirectInputChange('workExperience', newWorkExperience);
+                                                        }}
+                                                        className="ml-2"
+                                                    >
+                                                        Eliminar Experiencia
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        ))}
+                                        <Button 
+                                            type="button"
+                                            onClick={() => {
+                                                const newWorkExperience = [
+                                                    ...field.value, 
+                                                    { company: '', period: '', roles: ['Nuevo Rol'] }
+                                                ];
+                                                field.onChange(newWorkExperience);
+                                                handleDirectInputChange('workExperience', newWorkExperience);
+                                            }}
+                                            className="mt-2"
+                                        >
+                                            Agregar Experiencia
+                                        </Button>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </CardContent>
+                    </Card>
+
+                    {/* Languages Section */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Idiomas</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <FormField
+                                    control={form.control}
+                                    name="languages"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            {field.value.map((lang, index) => (
+                                                <div 
+                                                    key={index} 
+                                                    className="flex items-center space-x-2 mb-2"
+                                                >
+                                                    <FormControl className="flex-grow">
+                                                        <Select 
+                                                            value={lang.language}
+                                                            onValueChange={(value) => {
+                                                                const newLanguages = [...field.value];
+                                                                const selectedLanguage = LANGUAGE_OPTIONS.find(
+                                                                    option => option.language === value
+                                                                );
+                                                                newLanguages[index] = {
+                                                                    language: value, 
+                                                                    level: selectedLanguage?.levels[0] || 'A1'
+                                                                };
+                                                                field.onChange(newLanguages);
+                                                                handleDirectInputChange('languages', newLanguages);
+                                                            }}
+                                                        >
+                                                            <SelectTrigger>
+                                                                <SelectValue placeholder="Idioma" />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                {LANGUAGE_OPTIONS.map((option, optIndex) => (
+                                                                    <SelectItem 
+                                                                        key={optIndex} 
+                                                                        value={option.language}
+                                                                    >
+                                                                        {option.language}
+                                                                    </SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </FormControl>
+
+                                                    <FormControl className="flex-grow">
+                                                        <Select
+                                                            value={lang.level}
+                                                            onValueChange={(value) => {
+                                                                const newLanguages = [...field.value];
+                                                                newLanguages[index].level = value;
+                                                                field.onChange(newLanguages);
+                                                                handleDirectInputChange('languages', newLanguages);
+                                                            }}
+                                                        >
+                                                            <SelectTrigger>
+                                                                <SelectValue placeholder="Nivel" />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                {LANGUAGE_OPTIONS
+                                                                    .find(opt => opt.language === lang.language)
+                                                                    ?.levels.map((level, levelIndex) => (
+                                                                        <SelectItem 
+                                                                            key={levelIndex} 
+                                                                            value={level}
+                                                                        >
+                                                                            {level}
+                                                                        </SelectItem>
+                                                                    ))
+                                                                }
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </FormControl>
+
+                                                    {field.value.length > 1 && (
+                                                        <Button 
+                                                            variant="destructive"
+                                                            size="sm"
+                                                            type="button"
+                                                            className="p-2"
+                                                            onClick={() => {
+                                                                const newLanguages = field.value.filter(
+                                                                    (_, i) => i !== index
+                                                                );
+                                                                field.onChange(newLanguages);
+                                                                handleDirectInputChange('languages', newLanguages);
+                                                            }}
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                            ))}
+                                            
+                                            <Button 
+                                                type="button"
+                                                onClick={() => {
+                                                    const newLanguages = [
+                                                        ...field.value, 
+                                                        { 
+                                                            language: 'Inglés', 
+                                                            level: 'A1' 
+                                                        }
+                                                    ];
+                                                    field.onChange(newLanguages);
+                                                    handleDirectInputChange('languages', newLanguages);
+                                                }}
+                                                className="mt-2 w-full"
+                                                variant="outline"
+                                            >
+                                                Agregar Idioma
+                                            </Button>
+                                            
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </CardContent>
+                        </Card>
+        
+                    {/* Color Palette Section */}
+                    <Card>
+                    <CardHeader>
+                        <CardTitle>Paleta de Colores</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="flex items-center space-x-2 mb-4">
+                            <Button 
+                                type="button"
+                                onClick={() => setShowColorPalette(!showColorPalette)}
+                                variant="outline"
+                            >
+                                <Palette className="mr-2 h-4 w-4" />
+                                {showColorPalette ? 'Ocultar Paleta' : 'Seleccionar Color'}
+                            </Button>
+                            <span className="text-muted-foreground">
+                                Color Actual: {form.watch('colorPalette.name')}
+                            </span>
+                        </div>
+                        {showColorPalette && (
+                            <div className="grid grid-cols-3 gap-2">
+                                {COLOR_PALETTES.map((palette, index) => (
+                                    <Button
+                                        key={index}
+                                        type="button"
+                                        onClick={() => {
+                                            form.setValue('colorPalette', palette);
+                                            setShowColorPalette(false);
+                                        }}
+                                        variant="outline"
+                                        className="h-16"
+                                        style={{ backgroundColor: palette.headerBg }}
+                                    >
+                                        {palette.name}
+                                    </Button>                                        
+                                ))}
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+        
+                    {/* Action Buttons */}
+                    <div className="flex justify-between mt-6">
+                        <Button 
+                            type="button"
+                            onClick={resetToDefault}
+                            variant="secondary"
+                        >
+                            Restaurar Valores Predeterminados
+                        </Button>
+        
+                        <Button 
+                            type="submit"
+                            variant="default"
+                        >
+                            Guardar CV
+                        </Button>
+                    </div>
                 </div>
-            </div>
-        </div>
-    );
+            </form>
+        </Form>
+        );
 };
 
 export default CVForm;
